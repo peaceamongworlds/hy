@@ -954,6 +954,110 @@ Special Forms
    run, or the last form of ``else`` if no exception was raised, or the ``try``
    body if there is no ``else`` clause.
 
+.. hy:function:: (match [subject #* cases])
+
+   Compiles to a :py:keyword:`match` statement. Requires Python 3.10 or later.
+
+   ``match`` implements pattern matching. The ``subject`` is matched against the
+   pattern in each case. For the first successful match, the body of the case is
+   evaluated and returned as the result of the entire form. No further cases are
+   evaluated. If no patterns match, then ``None`` is returned.
+
+   Each case is of the following form:
+
+   ::
+      [pattern :if guard body]
+
+   The ``:if guard`` part is always optional. If the guard is present, it is
+   evaluated after a successful match of the subject against the pattern. If the
+   guard return a truthy value, the body is evaluated. Otherwise, the matching
+   carries on from the next case.
+
+   The ``body`` can consist of any number of forms. If the case is successfully
+   matched, then the body is evaluated and the value of the last form is
+   returned as the value of the ``match`` expression.
+
+   The ``pattern`` can be one of several different types (see :pep:`636`).
+
+   * Literal values and qualified symbols match if they are equal to
+     ``subject``.
+
+     ::
+        => (match 1
+             [0 :no-match]
+             [1 :match])
+        :match
+
+   * Unqualified symbols always match and are bound to the value of ``subject``.
+
+     ::
+        => (match 1
+             [x x])
+        1
+        
+   * Sequences match if every element matches every element of ``subject``.
+     
+     ::
+        => (match [1 2 3]
+             [[1 x 3]
+              x])
+        2
+
+   * Mapping patterns match if every value of the keys in the mapping matches
+     every the values of those keys in ``subject``.
+     
+     ::
+        => (match {"a" 1 "b" 2 "c" 3}
+             [{"a" 1 "c" c}
+              c])
+        3
+
+   * Object patterns matchs against the type of ``subject`` and the value of its
+     attributes.
+
+     ::
+        => (match :a
+             [(HyKeyword :name "a")
+              :match])
+        :match
+     
+   * Or patterns take any number of subpatterns and successfully match if any of
+     the subpatterns match.
+
+     ::
+        => (match 1
+             [(:or 1 2 3 4)
+              :match])
+        :match
+     
+   * As patterns take a subpattern and a symbol. The ``subject`` is bound to the
+     symbol, and the entire pattern matches if the ``subject`` matches against
+     the subpattern.
+
+     ::
+        => (match [1 2 3]
+             [(:as [1 2 y] x)
+              [x y]])
+        [[1 2 3] 3]
+        
+   The guards can use any symbols that are bound in the pattern.
+
+   ::
+      => (match 1
+           [x :if (neg? x)
+            :no-match]
+           [x :if (pos? x)
+            :match])
+      :match
+   
+   All the patterns can be nested arbitrarily.
+   
+   ::
+      => (match [1 {"a" 2 "b" :c}]
+           [[x {"a" a "b" (:as (HyKeyword :name (:or "c" "d")) b)}]
+            [x a b]])
+      [1 2 :c]
+
 .. hy:data:: unpack-iterable/unpack-mapping
 
    (Also known as the splat operator, star operator, argument expansion, argument

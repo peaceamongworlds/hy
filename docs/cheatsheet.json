@@ -167,6 +167,7 @@
           "cut",
           "raise",
           "try",
+          "match",
           "unpack-iterable/unpack-mapping",
           "unquote",
           "unquote-splice",
